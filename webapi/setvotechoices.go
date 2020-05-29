@@ -71,10 +71,22 @@ func setVoteChoices(c *gin.Context) {
 
 	// TODO: DB - error if given timestamp is older than any previous requests
 
-	// TODO: DB - store setvotechoices receipt in log
-
-	sendJSONResponse(setVoteChoicesResponse{
+	setVoteChoicesResponse := setVoteChoicesResponse{
 		Timestamp: time.Now().Unix(),
 		Request:   setVoteChoicesRequest,
-	}, c)
+	}
+
+	// Add receipt
+	receipt := database.Receipt{
+		Request:  setVoteChoicesRequest,
+		Response: setVoteChoicesResponse,
+	}
+	err = db.AddReceipt(ticket.Hash, receipt)
+	if err != nil {
+		log.Errorf("AddReceipt error: %v", err)
+		sendErrorResponse("database error", http.StatusInternalServerError, c)
+		return
+	}
+
+	sendJSONResponse(setVoteChoicesResponse, c)
 }

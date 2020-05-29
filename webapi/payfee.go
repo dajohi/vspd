@@ -177,8 +177,22 @@ findAddress:
 		log.Debugf("Fee tx broadcast for ticket: ticketHash=%s, feeHash=%s", ticket.Hash, feeTxHash)
 	}
 
-	sendJSONResponse(payFeeResponse{
+	payFeeResponse := payFeeResponse{
 		Timestamp: time.Now().Unix(),
 		Request:   payFeeRequest,
-	}, c)
+	}
+
+	// Add receipt
+	receipt := database.Receipt{
+		Request:  payFeeRequest,
+		Response: payFeeResponse,
+	}
+	err = db.AddReceipt(ticket.Hash, receipt)
+	if err != nil {
+		log.Errorf("AddReceipt error: %v", err)
+		sendErrorResponse("database error", http.StatusInternalServerError, c)
+		return
+	}
+
+	sendJSONResponse(payFeeResponse, c)
 }

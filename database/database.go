@@ -32,6 +32,8 @@ var (
 	privateKeyK = []byte("privatekey")
 	// lastaddressindex is the index of the last address used for fees.
 	lastAddressIndexK = []byte("lastaddressindex")
+	// receipts is the receipt log
+	receiptsBktK = []byte("receipts")
 )
 
 // backupMtx protects writeBackup, to ensure only one backup file is written at
@@ -147,6 +149,12 @@ func Open(ctx context.Context, shutdownWg *sync.WaitGroup, dbFile string, backup
 			_, err = vspBkt.CreateBucket(ticketBktK)
 			if err != nil {
 				return fmt.Errorf("failed to create %s bucket: %v", string(ticketBktK), err)
+			}
+
+			// Create receipts bucket.
+			_, err = vspBkt.CreateBucket(receiptsBktK)
+			if err != nil {
+				return fmt.Errorf("failed to create %s bucket: %v", string(receiptsBktK), err)
 			}
 		}
 
