@@ -49,4 +49,4 @@ golangci-lint run --disable-all --deadline=10m \
   --enable=unused \
   --enable=errcheck \
   --enable=asciicheck
-  
+
