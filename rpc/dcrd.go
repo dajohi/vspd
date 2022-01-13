@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/decred/dcrd/chaincfg/chainhash"
 	"github.com/decred/dcrd/chaincfg/v3"
 	dcrdtypes "github.com/decred/dcrd/rpc/jsonrpc/types/v3"
 	"github.com/decred/dcrd/wire"
@@ -145,6 +146,11 @@ func (c *DcrdRPC) NotifyBlocks() error {
 	return c.Call(c.ctx, "notifyblocks", nil)
 }
 
+// NotifyTSpend uses notifytspend RPC to request new tspend notifications from dcrd.
+func (c *DcrdRPC) NotifyTSpend() error {
+	return c.Call(c.ctx, "notifytspend", nil)
+}
+
 // GetBestBlockHeader uses getbestblockhash RPC, followed by getblockheader RPC,
 // to retrieve the header of the best block known to the dcrd instance.
 func (c *DcrdRPC) GetBestBlockHeader() (*dcrdtypes.GetBlockHeaderVerboseResult, error) {
@@ -226,4 +232,26 @@ func ParseBlockConnectedNotification(params json.RawMessage) (*wire.BlockHeader,
 	}
 
 	return &header, nil
+}
+
+// ParseTSpendNotification extracts theh ash from a
+// tspend JSON-RPC notification.
+func ParseTSpendNotification(params json.RawMessage) (*chainhash.Hash, error) {
+	var notif []string
+	err := json.Unmarshal(params, &notif)
+	if err != nil {
+		return nil, fmt.Errorf("json unmarshal error: %w", err)
+	}
+
+	if len(notif) == 0 {
+		return nil, errors.New("notification is empty")
+	}
+
+	rawHash := notif[0]
+	hash, err := chainhash.NewHashFromStr(rawHash)
+	if err != nil {
+		return nil, fmt.Errorf("error creating hash from string: %w", err)
+	}
+
+	return hash, nil
 }

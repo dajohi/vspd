@@ -46,20 +46,23 @@ func (n *NotificationHandler) Notify(method string, params json.RawMessage) erro
 	n.ShutdownWg.Add(1)
 	defer n.ShutdownWg.Done()
 
-	if method != "blockconnected" {
-		return nil
+	switch method {
+	case "blockconnected":
+		header, err := rpc.ParseBlockConnectedNotification(params)
+		if err != nil {
+			log.Errorf("Failed to parse dcrd block notification: %v", err)
+			return nil
+		}
+		log.Debugf("Block notification %d (%s)", header.Height, header.BlockHash().String())
+		blockConnected()
+	case "tspend":
+		hash, err := rpc.ParseTSpendNotification()
+		if err != nil {
+			log.Errorf("Failed to parse dcrd tspend notification: %v", err)
+			return nil
+		}
+		log.Debugf("TSpend notification %s", hash)
 	}
-
-	header, err := rpc.ParseBlockConnectedNotification(params)
-	if err != nil {
-		log.Errorf("Failed to parse dcrd block notification: %v", err)
-		return nil
-	}
-
-	log.Debugf("Block notification %d (%s)", header.Height, header.BlockHash().String())
-
-	blockConnected()
-
 	return nil
 }
 
@@ -323,8 +326,13 @@ func connectNotifier(shutdownCtx context.Context, dcrdWithNotifs rpc.DcrdConnect
 	if err != nil {
 		return err
 	}
-
 	log.Info("Subscribed for dcrd block notifications")
+
+	err = dcrdClient.NotifyTSpend()
+	if err != nil {
+		return err
+	}
+	log.Info("Subscribed for dcrd tspend notifications")
 
 	// Wait until context is done (vspd is shutting down), or until the
 	// notifier is closed.
